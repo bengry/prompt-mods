@@ -1,6 +1,7 @@
 import { describe, expect, mock, test } from 'claude-code/testing';
 
 import { parseArgs } from '../hooks/args';
+import { describeFailure } from '../hooks/failure';
 import { forkPrompt } from '../hooks/prompts';
 
 describe('parseArgs', () => {
@@ -74,4 +75,34 @@ test('a pulled thread rides along with the next prompt', async ($, on) => {
 test('an unknown thread number says so', async ($) => {
   const ran = await $.command.run({ command: 'ask', args: '9 more?', origin: composer, presentation });
   expect(ran.text).toBe('No ask thread #9. /ask list shows them.');
+});
+
+test('before the main chat has replied, /ask is answered by the session model without the transcript', async ($, on) => {
+  const clock = mock.clock(on);
+  const completed: { model: string; prompt: string }[] = [];
+  on('model.fork', () => ({ value: { isAnswered: false, reason: 'nothing-to-fork' as const } }));
+  on('session.model', () => ({ value: 'claude-opus-5-5' }));
+  on('model.complete', ($, e) => {
+    completed.push({ model: e.model, prompt: e.prompt });
+    return { value: { isAnswered: true, text: 'Yes, I am working.', usage } };
+  });
+  on('ui.open', () => ({ value: { isPlaced: true as const } }));
+
+  await $.command.run({ command: 'ask', args: 'are you working', origin: composer, presentation });
+  await clock.settle();
+
+  expect(completed).toHaveLength(1);
+  expect(completed[0]?.model).toBe('claude-opus-5-5');
+  expect(completed[0]?.prompt).toContain('are you working');
+});
+
+test('a failed answer names its cause in words', () => {
+  expect(describeFailure({ isAnswered: false, reason: 'api-error', status: 529, error: 'overloaded', usage })).toBe(
+    'the API returned 529 (overloaded)',
+  );
+  expect(describeFailure({ isAnswered: false, reason: 'api-error', status: null, error: 'unknown', usage })).toBe(
+    'no response from the API (unknown)',
+  );
+  expect(describeFailure({ isAnswered: false, reason: 'empty-reply', usage })).toBe('the model replied without any text');
+  expect(describeFailure({ isAnswered: false, reason: 'aborted', usage })).toBe('the request was cancelled');
 });

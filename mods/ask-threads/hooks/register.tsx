@@ -1,8 +1,9 @@
-import type { EngineInterface, Register } from 'claude-code';
+import type { EngineInterface, ModelCompleteResult, Register } from 'claude-code';
 import { atom, read, update } from 'claude-code';
 
 import type { Exchange } from '../types';
 import { parseArgs } from './args';
+import { describeFailure } from './failure';
 import { forkPrompt, pulledContext } from './prompts';
 
 const PANE = 'ask-threads';
@@ -30,9 +31,22 @@ const ask = async ($: EngineInterface, id: number, question: string): Promise<vo
   $.clock.after(0, () => void answer($, id, question, earlier));
 };
 
+// The main chat has nothing to fork until its first reply, so until then the question goes to the session's model on its own.
+const askModel = async ($: EngineInterface, prompt: string): Promise<ModelCompleteResult> => {
+  const forked = await $.model.fork({ prompt });
+
+  if (forked.isAnswered || forked.reason !== 'nothing-to-fork') {
+    return forked;
+  }
+
+  const model = await $.session.model();
+  const completed = await $.model.complete({ model, prompt, maxTokens: 4096 });
+  return completed;
+};
+
 const answer = async ($: EngineInterface, id: number, question: string, earlier: readonly Exchange[]): Promise<void> => {
-  const reply = await $.model.fork({ prompt: forkPrompt(earlier, question) });
-  const exchange: Exchange = reply.isAnswered ? { question, answer: reply.text } : { question, answer: null, error: reply.reason };
+  const reply = await askModel($, forkPrompt(earlier, question));
+  const exchange: Exchange = reply.isAnswered ? { question, answer: reply.text } : { question, answer: null, error: describeFailure(reply) };
   await update($, threads, (all) => all.map((t) => (t.id === id ? { ...t, exchanges: [...t.exchanges.slice(0, -1), exchange] } : t)));
   await update($, busy, (ids) => ids.filter((one) => one !== id));
 };

@@ -1,6 +1,6 @@
 {
   "name": "ask-threads",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "/ask: side questions you can list, reopen, continue, and send to the main conversation",
   "author": {
     "name": "yyosifov",
