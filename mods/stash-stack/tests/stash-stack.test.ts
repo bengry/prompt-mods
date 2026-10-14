@@ -6,6 +6,19 @@ import { push, stashRequest, vanished, wiped } from '../hooks/capture';
 const DRAFT = 'refactor the auth middleware to use the new token cache';
 
 describe('capture rules', () => {
+  test('by default, wiping a draft stashes nothing', async ($, on) => {
+    mock.clock(on);
+    mock.store(on);
+    on('session.root', () => ({ value: '/repo' }));
+    on('prompt.edit', ($, e) => ({ text: e.text.slice(0, e.start) + e.inputText + e.text.slice(e.end), cursor: 0 }));
+
+    await edit($, { origin: editor, text: '', cursor: 0, start: 0, end: 0, inputText: DRAFT });
+    await edit($, { origin: editor, text: DRAFT, cursor: DRAFT.length, start: 0, end: DRAFT.length, inputText: '' });
+
+    const ran = await $.command.run({ command: 'stash', args: 'pop', origin: composer, presentation });
+    expect(ran.text).toBe('The stash is empty.');
+  });
+
   test('a message ending in /stash asks to stash the rest', () => {
     expect(stashRequest('hey i wonder /stash')).toBe('hey i wonder');
     expect(stashRequest('hey i wonder\n/stash  ')).toBe('hey i wonder');
@@ -57,7 +70,7 @@ const editor = { kind: 'composer' } as never;
 type Edit = { origin: never; text: string; cursor: number; start: number; end: number; inputText: string };
 const edit = ($: unknown, e: Edit): Promise<unknown> => ($ as { prompt: { edit: (e: Edit) => Promise<unknown> } }).prompt.edit(e);
 
-test('wiping a draft stashes it and /stash pop puts it back', async ($, on) => {
+test('with autoStash on, wiping a draft stashes it and /stash pop puts it back', { options: { autoStash: true } }, async ($, on) => {
   const clock = mock.clock(on);
   mock.store(on);
   let box = '';
@@ -85,7 +98,7 @@ test('wiping a draft stashes it and /stash pop puts it back', async ($, on) => {
   expect(again.text).toBe('The stash is empty.');
 });
 
-test('a sent draft is not stashed', async ($, on) => {
+test('a sent draft is not stashed', { options: { autoStash: true } }, async ($, on) => {
   mock.clock(on);
   mock.store(on);
   on('session.root', () => ({ value: '/repo' }));
@@ -145,4 +158,32 @@ test('the status line counts the stash and goes away when it is empty', async ($
   await $.command.run({ command: 'stash', args: 'pop', origin: composer, presentation });
   await clock.settle();
   expect(statuses.at(-1)).toBe(undefined);
+});
+
+test('View shows the whole draft in the stash pane and Hide folds it again', async ($, on) => {
+  mock.clock(on);
+  mock.store(on);
+  on('session.root', () => ({ value: '/repo' }));
+  on('prompt.submit', ($, e) => ({ text: e.text }));
+
+  const long = `${DRAFT} and then move the session lookups behind the same cache so the login path stops hitting the database`;
+  await $.prompt.submit({ text: `${long} /stash`, wait: false, origin: composer });
+
+  const ui = await $.ui.mount({
+    plugin: 'stash-stack',
+    surface: 'terminal',
+    component: 'Pane',
+    requestId: 'stash-stack',
+    props: { title: 'stash' } as never,
+    viewport: { columns: 80, rows: 30 },
+  });
+  expect(await ui.find({ type: 'Text', text: long })).toBe(undefined);
+
+  await ui.press({ key: 'view0' });
+  expect(await ui.find({ type: 'Text', text: long })).toBeDefined();
+  expect((await ui.find({ key: 'view0' }))?.text).toBe('Hide');
+
+  await ui.press({ key: 'view0' });
+  expect(await ui.find({ type: 'Text', text: long })).toBe(undefined);
+  await ui.unmount();
 });

@@ -21,7 +21,7 @@
     {
       "name": "stash-stack",
       "source": "./mods/stash-stack",
-      "description": "git stash for your prompt: wiped drafts are kept, /stash pop brings them back"
+      "description": "git stash for your prompt: end a message with /stash to keep it, /stash pop brings it back"
     }
   ]
 }

@@ -7,6 +7,7 @@ import { push, stashRequest, vanished, wiped } from './capture';
 
 const PANE = 'stash-stack';
 const stack = atom({ plugin: 'stash-stack', key: 'stack' } as const, []);
+const viewing = atom({ plugin: 'stash-stack', key: 'viewing' } as const, null);
 
 // The stack is kept per project, across sessions, like git's.
 const storeKey = async ($: EngineInterface): Promise<string> => {
@@ -16,6 +17,7 @@ const storeKey = async ($: EngineInterface): Promise<string> => {
 
 // Set from the `showStatus` option each time the module loads.
 let isStatusShown = true;
+let isAutoStash = false;
 
 const showCount = ($: EngineInterface, count: number): void => {
   const isVisible = isStatusShown && count > 0;
@@ -24,6 +26,7 @@ const showCount = ($: EngineInterface, count: number): void => {
 
 const save = async ($: EngineInterface, next: Stashed[]): Promise<void> => {
   await update($, stack, () => next);
+  await update($, viewing, () => null);
   showCount($, next.length);
   const key = await storeKey($);
   await $.store.set(key, next);
@@ -35,6 +38,10 @@ const drop = async ($: EngineInterface, index: number): Promise<void> => {
     $,
     list.filter((_, i) => i !== index),
   );
+};
+
+const toggleView = async ($: EngineInterface, index: number): Promise<void> => {
+  await update($, viewing, (open) => (open === index ? null : index));
 };
 
 const preview = (text: string, width: number): string => {
@@ -81,6 +88,7 @@ const restore = async ($: EngineInterface, index: number, isKept: boolean): Prom
 
 export const register: Register = (on, options) => {
   isStatusShown = options.showStatus !== false;
+  isAutoStash = options.autoStash === true;
 
   on('session.start', async ($, e, next) => {
     await $.command.register({
@@ -99,6 +107,10 @@ export const register: Register = (on, options) => {
   });
 
   on('prompt.edit', async ($, e, next) => {
+    if (!isAutoStash) {
+      return next(e);
+    }
+
     const gone = vanished(last, e.text);
     const box = await next(e);
     const cleared = wiped(e.text, box.text);
@@ -153,20 +165,34 @@ export const register: Register = (on, options) => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text, Button } = $.ui.resolve(e);
     const list = await read($, stack);
-    const width = Math.max(20, (e.viewport?.columns ?? 80) - 30);
+    const open = await read($, viewing);
+    const width = Math.max(20, (e.viewport?.columns ?? 80) - 36);
 
     return (
       <Box flexDirection="column">
-        {list.length === 0 && <Text dimColor>Nothing stashed. Drafts you wipe without sending land here.</Text>}
-        {list.map((entry, i) => (
-          <Box key={`s${i}`}>
-            <Text dimColor>{`stash@{${i}}  `}</Text>
-            <Text>{preview(entry.text, width)} </Text>
-            <Button key={`pop${i}`} label="Pop" onPress={() => void restore($, i, false)} />
-            <Text> </Text>
-            <Button key={`drop${i}`} label="Drop" dimColor onPress={() => void drop($, i)} />
-          </Box>
-        ))}
+        {list.length === 0 && <Text dimColor>Nothing stashed. End a message with /stash to keep it here.</Text>}
+        {list.map((entry, i) => {
+          const isOpen = open === i;
+
+          return (
+            <Box key={`s${i}`} flexDirection="column">
+              <Box>
+                <Text dimColor>{`stash@{${i}}  `}</Text>
+                <Text>{preview(entry.text, width)} </Text>
+                <Button key={`view${i}`} label={isOpen ? 'Hide' : 'View'} onPress={() => void toggleView($, i)} />
+                <Text> </Text>
+                <Button key={`pop${i}`} label="Pop" onPress={() => void restore($, i, false)} />
+                <Text> </Text>
+                <Button key={`drop${i}`} label="Drop" onPress={() => void drop($, i)} />
+              </Box>
+              {isOpen && (
+                <Box key={`full${i}`} borderStyle="round" borderDimColor paddingX={1} marginBottom={1}>
+                  <Text>{entry.text}</Text>
+                </Box>
+              )}
+            </Box>
+          );
+        })}
       </Box>
     );
   });

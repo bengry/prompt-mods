@@ -1,7 +1,7 @@
 {
   "name": "stash-stack",
-  "version": "0.2.1",
-  "description": "git stash for your prompt: every draft you wipe without sending is kept, /stash pop brings it back",
+  "version": "0.3.0",
+  "description": "git stash for your prompt: end a message with /stash to keep it, /stash pop brings it back",
   "author": {
     "name": "yyosifov",
     "url": "https://github.com/yyosifov"
@@ -12,6 +12,12 @@
   "keywords": ["stash", "draft", "prompt", "mod"],
   "types": "./types/index.d.ts",
   "userConfig": {
+    "autoStash": {
+      "type": "boolean",
+      "title": "Stash wiped drafts",
+      "description": "Also stash a draft you wipe without sending (Ctrl+U, select-all and delete, Ctrl+C)",
+      "default": false
+    },
     "showStatus": {
       "type": "boolean",
       "title": "Show stash count",

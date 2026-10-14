@@ -1,26 +1,22 @@
 # stash-stack
 
-`git stash` for your prompt. Wipe a draft without sending it (Ctrl+U, select-all and delete, clearing the box) and it is kept on a stack. `/stash pop` puts it back.
-
-```
-/stash pop
-```
-
-Or end a message with `/stash` to stash it instead of sending it:
+`git stash` for your prompt. End a message with `/stash` to keep it on a stack instead of sending it:
 
 ```
 refactor the auth middleware to use the new token cache /stash
 ```
 
-Only the last word counts, so a message that mentions `/stash` is sent as written.
+`/stash pop` puts it back. Only the last word counts, so a message that mentions `/stash` is sent as written.
 
-A toast confirms each stash. Short drafts (under 15 characters) and drafts you send are not kept.
+Turn on [`autoStash`](#settings) to also keep every draft you wipe without sending (Ctrl+U, select-all and delete, Ctrl+C). Short drafts (under 15 characters) and drafts you send are never kept that way.
+
+A toast confirms each stash.
 
 ## Commands
 
 | Command | Does |
 | --- | --- |
-| `/stash` or `/stash list` | Open the stack in a pane, with Pop and Drop per entry |
+| `/stash` or `/stash list` | Open the stack in a pane, with View (the whole draft), Pop and Drop per entry |
 | `/stash pop [N]` | Put draft N (default 0, the newest) back in the prompt box and remove it from the stack |
 | `/stash apply [N]` | Same, but keep it on the stack |
 | `/stash drop [N]` | Delete draft N |
@@ -38,9 +34,16 @@ A toast confirms each stash. Short drafts (under 15 characters) and drafts you s
 
 | Setting | Default | Does |
 | --- | --- | --- |
+| `autoStash` | off | Also stashes a draft you wipe without sending |
 | `showStatus` | on | Shows `stash: N · /stash` in the status line while the stash holds anything |
 
-Change it from the plugin's config menu in `/plugin`.
+To change one:
+
+1. Run `/plugin` and pick **stash-stack** from your installed plugins.
+2. Open its config.
+3. Toggle **Stash wiped drafts** (`autoStash`) or **Show stash count** (`showStatus`).
+
+The mod reloads with the new value at once; no restart is needed.
 
 ## Notes
 

@@ -5,6 +5,7 @@ declare module 'claude-code' {
     'stash-stack': {
       // Newest first, as git numbers stash@{0}.
       stack: Stashed[];
+      viewing: number | null;
     };
   }
 }
