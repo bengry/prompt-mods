@@ -35,3 +35,15 @@ export const parseArgs = (args: string): AskAction => {
 
   return { kind: 'ask', question: text };
 };
+
+const ASK_SUFFIX = /(^|\s)\/ask\s*$/;
+
+export const askRequest = (text: string): string | null => {
+  const isRequest = ASK_SUFFIX.test(text);
+  if (!isRequest) {
+    return null;
+  }
+
+  const question = text.replace(ASK_SUFFIX, '').trim();
+  return question === '' ? null : question;
+};

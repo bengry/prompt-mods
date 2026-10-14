@@ -2,7 +2,7 @@ import type { EngineInterface, ModelCompleteResult, Register } from 'claude-code
 import { atom, read, update } from 'claude-code';
 
 import type { Exchange } from '../types';
-import { parseArgs } from './args';
+import { askRequest, parseArgs } from './args';
 import { describeFailure } from './failure';
 import { forkPrompt, pulledContext } from './prompts';
 
@@ -51,9 +51,34 @@ const answer = async ($: EngineInterface, id: number, question: string, earlier:
   await update($, busy, (ids) => ids.filter((one) => one !== id));
 };
 
+const startThread = async ($: EngineInterface, question: string): Promise<number> => {
+  const list = await read($, threads);
+  const id = list.reduce((max, t) => Math.max(max, t.id), 0) + 1;
+  const startedAt = await $.clock.now();
+  await update($, threads, (all) => [...all, { id, startedAt, exchanges: [] }]);
+  await show($, id);
+  await ask($, id, question);
+  return id;
+};
+
 const pull = async ($: EngineInterface, id: number): Promise<void> => {
   const ids = await update($, pulled, (all) => (all.includes(id) ? all : [...all, id]));
   $.ui.status(`ask ${ids.map((one) => `#${one}`).join(' ')} attached to your next message`);
+};
+
+// A pulled thread rides along with the next prompt, unseen in the transcript.
+const takePulled = async ($: EngineInterface): Promise<string[]> => {
+  const ids = await read($, pulled);
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const all = await read($, threads);
+  const context = all.filter((t) => ids.includes(t.id)).map(pulledContext);
+  await update($, pulled, () => []);
+  $.ui.status(undefined);
+  $.ui.log(`▸ ask ${ids.map((id) => `#${id}`).join(' ')} sent along with this message`);
+  return context;
 };
 
 export const register: Register = (on) => {
@@ -78,11 +103,7 @@ export const register: Register = (on) => {
     }
 
     if (action.kind === 'ask') {
-      const id = list.reduce((max, t) => Math.max(max, t.id), 0) + 1;
-      const startedAt = await $.clock.now();
-      await update($, threads, (all) => [...all, { id, startedAt, exchanges: [] }]);
-      await show($, id);
-      await ask($, id, action.question);
+      await startThread($, action.question);
       return {};
     }
 
@@ -110,18 +131,18 @@ export const register: Register = (on) => {
     }
   });
 
-  // A pulled thread rides along with the next prompt, unseen in the transcript.
   on('prompt.submit', async ($, e, next) => {
-    const ids = await read($, pulled);
-    if (ids.length === 0) {
-      return next(e);
+    const isTyped = e.command === undefined && e.isMeta === undefined;
+    const question = isTyped ? askRequest(e.text) : null;
+    if (question !== null) {
+      const id = await startThread($, question);
+      return { drop: `Asked on the side as #${id} · /ask list shows it` };
     }
 
-    const all = await read($, threads);
-    const context = all.filter((t) => ids.includes(t.id)).map(pulledContext);
-    await update($, pulled, () => []);
-    $.ui.status(undefined);
-    $.ui.log(`▸ ask ${ids.map((id) => `#${id}`).join(' ')} sent along with this message`);
+    const context = await takePulled($);
+    if (context.length === 0) {
+      return next(e);
+    }
 
     return next({ ...e, context: [...(e.context ?? []), ...context] });
   });

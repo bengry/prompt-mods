@@ -6,6 +6,14 @@ Side questions that don't vanish. Like `/btw`, but every question becomes a thre
 /ask why did we pick SQLite over Postgres here?
 ```
 
+Or end any message with `/ask` when you decide halfway through typing that it is a side question:
+
+```
+why did we pick SQLite over Postgres here /ask
+```
+
+Only the last word counts, so a message that mentions `/ask` goes to the main chat as written.
+
 The answer opens in a pane. It is asked over the main conversation's context (its prompt cache, no tools) and stays out of the main transcript, so the main task is undisturbed. `/ask` runs right away, even while Claude is mid-turn.
 
 ## Commands

@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from 'claude-code/testing';
 
-import { parseArgs } from '../hooks/args';
+import { askRequest, parseArgs } from '../hooks/args';
 import { describeFailure } from '../hooks/failure';
 import { forkPrompt } from '../hooks/prompts';
 
@@ -19,6 +19,14 @@ describe('parseArgs', () => {
     expect(parseArgs('pull requests: how many are open?').kind).toBe('ask');
     expect(parseArgs('list the TODOs')).toEqual({ kind: 'ask', question: 'list the TODOs' });
   });
+});
+
+test('a message ending in /ask is a side question', () => {
+  expect(askRequest('why is the cache cold /ask')).toBe('why is the cache cold');
+  expect(askRequest('why is the cache cold?\n/ask  ')).toBe('why is the cache cold?');
+  expect(askRequest('what does /ask do in this repo?')).toBe(null);
+  expect(askRequest('see mods/ask')).toBe(null);
+  expect(askRequest('/ask')).toBe(null);
 });
 
 test('a follow-up carries the thread so far', () => {
@@ -105,4 +113,29 @@ test('a failed answer names its cause in words', () => {
   );
   expect(describeFailure({ isAnswered: false, reason: 'empty-reply', usage })).toBe('the model replied without any text');
   expect(describeFailure({ isAnswered: false, reason: 'aborted', usage })).toBe('the request was cancelled');
+});
+
+test('a message ending in /ask goes to a side thread, not the main chat', async ($, on) => {
+  const clock = mock.clock(on);
+  const asked: string[] = [];
+  let sent = 0;
+  on('model.fork', ($, e) => {
+    asked.push(e.prompt);
+    return { value: { isAnswered: true, text: 'Cold start.', usage } };
+  });
+  on('ui.open', () => ({ value: { isPlaced: true as const } }));
+  on('prompt.submit', ($, e) => {
+    sent += 1;
+    return { text: e.text };
+  });
+
+  const result = await $.prompt.submit({ text: 'why is the cache cold /ask', wait: false, origin: composer });
+  await clock.settle();
+
+  expect(result.drop).toBe('Asked on the side as #1 · /ask list shows it');
+  expect(sent).toBe(0);
+  expect(asked[0]).toContain('why is the cache cold');
+
+  await $.prompt.submit({ text: 'what does /ask do?', wait: false, origin: composer });
+  expect(sent).toBe(1);
 });
