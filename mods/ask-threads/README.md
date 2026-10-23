@@ -28,7 +28,7 @@ The answer opens in a pane. It is asked over the main conversation's context (it
 | `/aside pull N` | Send thread #N to Claude with your next message |
 | `/aside drop N` | Delete thread #N |
 
-In a thread, **Send to main chat** does the same as `/aside pull N`: the whole thread goes to Claude as hidden context with your next message, once. The status line confirms it until you send.
+In a thread, **‹ threads** (hotkey `t` once the focus is off the field) goes back to the list, and **Send to main chat** does the same as `/aside pull N`: the whole thread goes to Claude as hidden context with your next message, once. The status line confirms it until you send.
 
 ## Install
 

@@ -192,7 +192,10 @@ export const register: Register = (on) => {
 
     return (
       <Box flexDirection="column">
-        <Text dimColor>aside #{thread.id}</Text>
+        <Box>
+          <Button key="back" plain hotkey="t" label="‹ threads" onPress={() => update($, openId, () => null)} />
+          <Text dimColor> / #{thread.id}</Text>
+        </Box>
         {thread.exchanges.map((x, i) => (
           <Box key={`x${i}`} flexDirection="column" marginBottom={1}>
             <Text bold>› {x.question}</Text>
@@ -215,15 +218,11 @@ export const register: Register = (on) => {
             }}
           />
         )}
-        <Box>
-          <Button key="back" label="← All threads" onPress={() => update($, openId, () => null)} />
-          <Text> </Text>
-          {isAttached ? (
-            <Text color="green">✓ attached to your next message</Text>
-          ) : (
-            <Button key="pull" label="Send to main chat" onPress={() => void pull($, thread.id)} />
-          )}
-        </Box>
+        {isAttached ? (
+          <Text color="green">✓ attached to your next message</Text>
+        ) : (
+          <Button key="pull" label="Send to main chat" onPress={() => void pull($, thread.id)} />
+        )}
       </Box>
     );
   });
