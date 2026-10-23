@@ -1,7 +1,7 @@
 {
   "name": "ask-threads",
   "version": "0.2.0",
-  "description": "/ask: side questions you can list, reopen, continue, and send to the main conversation",
+  "description": "/aside: side questions you can list, reopen, continue, and send to the main conversation",
   "author": {
     "name": "yyosifov",
     "url": "https://github.com/yyosifov"

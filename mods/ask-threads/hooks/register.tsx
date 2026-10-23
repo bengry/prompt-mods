@@ -19,7 +19,7 @@ const preview = (text: string, width: number): string => {
 
 const show = async ($: EngineInterface, id: number | null): Promise<void> => {
   await update($, openId, () => id);
-  await $.ui.open({ id: PANE, title: 'ask', focus: true });
+  await $.ui.open({ id: PANE, title: 'aside', focus: true });
 };
 
 // Adds the question to the thread and asks the fork, on a timer of its own so
@@ -63,7 +63,7 @@ const startThread = async ($: EngineInterface, question: string): Promise<number
 
 const pull = async ($: EngineInterface, id: number): Promise<void> => {
   const ids = await update($, pulled, (all) => (all.includes(id) ? all : [...all, id]));
-  $.ui.status(`ask ${ids.map((one) => `#${one}`).join(' ')} attached to your next message`);
+  $.ui.status(`aside ${ids.map((one) => `#${one}`).join(' ')} attached to your next message`);
 };
 
 // A pulled thread rides along with the next prompt, unseen in the transcript.
@@ -77,15 +77,15 @@ const takePulled = async ($: EngineInterface): Promise<string[]> => {
   const context = all.filter((t) => ids.includes(t.id)).map(pulledContext);
   await update($, pulled, () => []);
   $.ui.status(undefined);
-  $.ui.log(`▸ ask ${ids.map((id) => `#${id}`).join(' ')} sent along with this message`);
+  $.ui.log(`▸ aside ${ids.map((id) => `#${id}`).join(' ')} sent along with this message`);
   return context;
 };
 
 export const register: Register = (on) => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
-      name: 'ask',
-      description: 'Side question that stays out of the main conversation; /ask list to reopen one',
+      name: 'aside',
+      description: 'Side question that stays out of the main conversation; /aside list to reopen one',
       argumentHint: '<question> | list | N <follow-up> | pull N | drop N',
       immediate: true,
     });
@@ -93,7 +93,7 @@ export const register: Register = (on) => {
     return next(e);
   });
 
-  on('command.run', { command: 'ask' }, async ($, e) => {
+  on('command.run', { command: 'aside' }, async ($, e) => {
     const action = parseArgs(e.args);
     const list = await read($, threads);
 
@@ -109,7 +109,7 @@ export const register: Register = (on) => {
 
     const thread = list.find((t) => t.id === action.id);
     if (thread === undefined) {
-      return { text: `No ask thread #${action.id}. /ask list shows them.` };
+      return { text: `No aside thread #${action.id}. /aside list shows them.` };
     }
 
     switch (action.kind) {
@@ -122,12 +122,12 @@ export const register: Register = (on) => {
         return {};
       case 'pull':
         await pull($, thread.id);
-        return { text: `ask #${thread.id} goes to Claude with your next message.` };
+        return { text: `aside #${thread.id} goes to Claude with your next message.` };
       case 'drop':
         await update($, threads, (all) => all.filter((t) => t.id !== thread.id));
         await update($, pulled, (ids) => ids.filter((one) => one !== thread.id));
         await update($, openId, (id) => (id === thread.id ? null : id));
-        return { text: `Dropped ask #${thread.id}.` };
+        return { text: `Dropped aside #${thread.id}.` };
     }
   });
 
@@ -136,7 +136,7 @@ export const register: Register = (on) => {
     const question = isTyped ? askRequest(e.text) : null;
     if (question !== null) {
       const id = await startThread($, question);
-      return { drop: `Asked on the side as #${id} · /ask list shows it` };
+      return { drop: `Asked on the side as #${id} · /aside list shows it` };
     }
 
     const context = await takePulled($);
@@ -150,7 +150,7 @@ export const register: Register = (on) => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const elements = $.ui.resolve(e);
     const { Box, Text, Button, Markdown } = elements;
-    // Mobile draws no field: the follow-up is typed as /ask N there.
+    // Mobile draws no field: the follow-up is typed as /aside N there.
     const Input = 'Input' in elements ? elements.Input : null;
     const all = await read($, threads);
     const id = await read($, openId);
@@ -162,7 +162,7 @@ export const register: Register = (on) => {
     if (thread === undefined) {
       return (
         <Box flexDirection="column">
-          {all.length === 0 && <Text dimColor>No side questions yet. /ask &lt;question&gt; asks one.</Text>}
+          {all.length === 0 && <Text dimColor>No side questions yet. /aside &lt;question&gt; asks one.</Text>}
           {all.map((t) => {
             const question = preview(t.exchanges[0]?.question ?? '', width);
             const attachedMark = attached.includes(t.id) ? '  ✓ attached' : '';
@@ -176,7 +176,7 @@ export const register: Register = (on) => {
               />
             );
           })}
-          {all.length > 0 && <Text dimColor>/ask N &lt;follow-up&gt; · /ask pull N · /ask drop N</Text>}
+          {all.length > 0 && <Text dimColor>/aside N &lt;follow-up&gt; · /aside pull N · /aside drop N</Text>}
         </Box>
       );
     }
@@ -186,7 +186,7 @@ export const register: Register = (on) => {
 
     return (
       <Box flexDirection="column">
-        <Text dimColor>ask #{thread.id}</Text>
+        <Text dimColor>aside #{thread.id}</Text>
         {thread.exchanges.map((x, i) => (
           <Box key={`x${i}`} flexDirection="column" marginBottom={1}>
             <Text bold>› {x.question}</Text>
@@ -195,7 +195,7 @@ export const register: Register = (on) => {
             {x.answer === null && x.error === undefined && <Text dimColor>thinking…</Text>}
           </Box>
         ))}
-        {!isBusy && Input === null && <Text dimColor>/ask {thread.id} &lt;follow-up&gt; to continue</Text>}
+        {!isBusy && Input === null && <Text dimColor>/aside {thread.id} &lt;follow-up&gt; to continue</Text>}
         {!isBusy && Input !== null && (
           <Input
             key="follow"

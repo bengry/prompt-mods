@@ -5,7 +5,7 @@ Small, finished [Claude Code mods](https://github.com/anthropics/claude-code/tre
 | Mod | What it does |
 | --- | --- |
 | [model-tag](mods/model-tag) | Write `@haiku` or `@max` in a message and that one turn runs on that model or effort. No `/model`, no retyping. |
-| [ask-threads](mods/ask-threads) | `/ask` side questions that you can list, reopen, continue, and send to the main conversation. |
+| [ask-threads](mods/ask-threads) | `/aside` side questions that you can list, reopen, continue, and send to the main conversation. |
 | [stash-stack](mods/stash-stack) | `git stash` for your prompt: drafts you wipe without sending are kept; `/stash pop` brings them back. |
 
 ## Install
@@ -14,16 +14,16 @@ All three, from your shell:
 
 ```sh
 for mod in model-tag ask-threads stash-stack; do
-  claude plugin install "$mod" --marketplace yyosifov/prompt-mods
+  claude plugin install "$mod" --marketplace bengry/prompt-mods
 done
 ```
 
 Or one at a time, in a Claude Code session:
 
 ```
-/plugin install model-tag --marketplace yyosifov/prompt-mods
-/plugin install ask-threads --marketplace yyosifov/prompt-mods
-/plugin install stash-stack --marketplace yyosifov/prompt-mods
+/plugin install model-tag --marketplace bengry/prompt-mods
+/plugin install ask-threads --marketplace bengry/prompt-mods
+/plugin install stash-stack --marketplace bengry/prompt-mods
 ```
 
 Answer `y` to add the marketplace, then pick a scope (user scope = every session). The mod is active right away. Mods installed from the shell load in your next Claude Code session, or after `/reload-plugins`.

@@ -1,5 +1,5 @@
 {
-  "name": "prompt-mods",
+  "name": "bengry-prompt-mods",
   "owner": {
     "name": "yyosifov",
     "url": "https://github.com/yyosifov"
@@ -16,7 +16,7 @@
     {
       "name": "ask-threads",
       "source": "./mods/ask-threads",
-      "description": "/ask: side questions you can list, reopen, continue, and send to the main conversation"
+      "description": "/aside: side questions you can list, reopen, continue, and send to the main conversation"
     },
     {
       "name": "stash-stack",

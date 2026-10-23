@@ -1,7 +1,7 @@
 import type { Exchange, Thread } from '../types';
 
 const PREAMBLE =
-  'This is a side question (/ask) asked while the main task continues. ' +
+  'This is a side question (/aside) asked while the main task continues. ' +
   'Answer it directly and briefly from what you already know of this conversation; ' +
   'it does not change the main task.';
 
@@ -18,4 +18,4 @@ export const forkPrompt = (earlier: readonly Exchange[], question: string): stri
 };
 
 export const pulledContext = (thread: Thread): string =>
-  `The user pulled in side thread #${thread.id} (a /ask conversation you had alongside this one):\n\n${transcript(thread.exchanges)}`;
+  `The user pulled in side thread #${thread.id} (a /aside conversation you had alongside this one):\n\n${transcript(thread.exchanges)}`;

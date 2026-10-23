@@ -21,12 +21,12 @@ describe('parseArgs', () => {
   });
 });
 
-test('a message ending in /ask is a side question', () => {
-  expect(askRequest('why is the cache cold /ask')).toBe('why is the cache cold');
-  expect(askRequest('why is the cache cold?\n/ask  ')).toBe('why is the cache cold?');
-  expect(askRequest('what does /ask do in this repo?')).toBe(null);
-  expect(askRequest('see mods/ask')).toBe(null);
-  expect(askRequest('/ask')).toBe(null);
+test('a message ending in /aside is a side question', () => {
+  expect(askRequest('why is the cache cold /aside')).toBe('why is the cache cold');
+  expect(askRequest('why is the cache cold?\n/aside  ')).toBe('why is the cache cold?');
+  expect(askRequest('what does /aside do in this repo?')).toBe(null);
+  expect(askRequest('see mods/aside')).toBe(null);
+  expect(askRequest('/aside')).toBe(null);
 });
 
 test('a follow-up carries the thread so far', () => {
@@ -39,7 +39,7 @@ const composer = { kind: 'composer' } as const;
 const presentation = { layout: 'main', columns: 100 } as never;
 const usage = { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
 
-test('/ask asks the fork, files the answer, and opens the pane', async ($, on) => {
+test('/aside asks the fork, files the answer, and opens the pane', async ($, on) => {
   const clock = mock.clock(on);
   const asked: string[] = [];
   const opened: string[] = [];
@@ -52,7 +52,7 @@ test('/ask asks the fork, files the answer, and opens the pane', async ($, on) =
     return { value: { isPlaced: true as const } };
   });
 
-  const ran = await $.command.run({ command: 'ask', args: 'why is the sky blue?', origin: composer, presentation });
+  const ran = await $.command.run({ command: 'aside', args: 'why is the sky blue?', origin: composer, presentation });
   await clock.settle();
 
   expect(ran.text).toBe(undefined);
@@ -70,9 +70,9 @@ test('a pulled thread rides along with the next prompt', async ($, on) => {
     return { text: e.text };
   });
 
-  await $.command.run({ command: 'ask', args: 'sky colour?', origin: composer, presentation });
+  await $.command.run({ command: 'aside', args: 'sky colour?', origin: composer, presentation });
   await clock.settle();
-  await $.command.run({ command: 'ask', args: 'pull 1', origin: composer, presentation });
+  await $.command.run({ command: 'aside', args: 'pull 1', origin: composer, presentation });
   await $.prompt.submit({ text: 'go on', wait: false, origin: composer });
   await $.prompt.submit({ text: 'and again', wait: false, origin: composer });
 
@@ -81,11 +81,11 @@ test('a pulled thread rides along with the next prompt', async ($, on) => {
 });
 
 test('an unknown thread number says so', async ($) => {
-  const ran = await $.command.run({ command: 'ask', args: '9 more?', origin: composer, presentation });
-  expect(ran.text).toBe('No ask thread #9. /ask list shows them.');
+  const ran = await $.command.run({ command: 'aside', args: '9 more?', origin: composer, presentation });
+  expect(ran.text).toBe('No aside thread #9. /aside list shows them.');
 });
 
-test('before the main chat has replied, /ask is answered by the session model without the transcript', async ($, on) => {
+test('before the main chat has replied, /aside is answered by the session model without the transcript', async ($, on) => {
   const clock = mock.clock(on);
   const completed: { model: string; prompt: string }[] = [];
   on('model.fork', () => ({ value: { isAnswered: false, reason: 'nothing-to-fork' as const } }));
@@ -96,7 +96,7 @@ test('before the main chat has replied, /ask is answered by the session model wi
   });
   on('ui.open', () => ({ value: { isPlaced: true as const } }));
 
-  await $.command.run({ command: 'ask', args: 'are you working', origin: composer, presentation });
+  await $.command.run({ command: 'aside', args: 'are you working', origin: composer, presentation });
   await clock.settle();
 
   expect(completed).toHaveLength(1);
@@ -115,7 +115,7 @@ test('a failed answer names its cause in words', () => {
   expect(describeFailure({ isAnswered: false, reason: 'aborted', usage })).toBe('the request was cancelled');
 });
 
-test('a message ending in /ask goes to a side thread, not the main chat', async ($, on) => {
+test('a message ending in /aside goes to a side thread, not the main chat', async ($, on) => {
   const clock = mock.clock(on);
   const asked: string[] = [];
   let sent = 0;
@@ -129,13 +129,13 @@ test('a message ending in /ask goes to a side thread, not the main chat', async 
     return { text: e.text };
   });
 
-  const result = await $.prompt.submit({ text: 'why is the cache cold /ask', wait: false, origin: composer });
+  const result = await $.prompt.submit({ text: 'why is the cache cold /aside', wait: false, origin: composer });
   await clock.settle();
 
-  expect(result.drop).toBe('Asked on the side as #1 · /ask list shows it');
+  expect(result.drop).toBe('Asked on the side as #1 · /aside list shows it');
   expect(sent).toBe(0);
   expect(asked[0]).toContain('why is the cache cold');
 
-  await $.prompt.submit({ text: 'what does /ask do?', wait: false, origin: composer });
+  await $.prompt.submit({ text: 'what does /aside do?', wait: false, origin: composer });
   expect(sent).toBe(1);
 });

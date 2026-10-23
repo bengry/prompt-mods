@@ -36,7 +36,7 @@ export const parseArgs = (args: string): AskAction => {
   return { kind: 'ask', question: text };
 };
 
-const ASK_SUFFIX = /(^|\s)\/ask\s*$/;
+const ASK_SUFFIX = /(^|\s)\/aside\s*$/;
 
 export const askRequest = (text: string): string | null => {
   const isRequest = ASK_SUFFIX.test(text);
