@@ -1,4 +1,5 @@
 export type AskAction =
+  | { kind: 'toggle' }
   | { kind: 'list' }
   | { kind: 'ask'; question: string }
   | { kind: 'open'; id: number }
@@ -8,7 +9,10 @@ export type AskAction =
 
 export const parseArgs = (args: string): AskAction => {
   const text = args.trim();
-  if (text === '' || text === 'list' || text === 'ls') {
+  if (text === '') {
+    return { kind: 'toggle' };
+  }
+  if (text === 'list' || text === 'ls') {
     return { kind: 'list' };
   }
 

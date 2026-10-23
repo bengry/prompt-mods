@@ -21,7 +21,8 @@ The answer opens in a pane. It is asked over the main conversation's context (it
 | Command | Does |
 | --- | --- |
 | `/aside <question>` | Ask a side question; starts thread #N |
-| `/aside` or `/aside list` | List this session's threads |
+| `/aside` | Toggle the pane open or closed |
+| `/aside list` | List this session's threads |
 | `/aside N` | Reopen thread #N |
 | `/aside N <follow-up>` | Continue thread #N (or type in the pane's field) |
 | `/aside pull N` | Send thread #N to Claude with your next message |

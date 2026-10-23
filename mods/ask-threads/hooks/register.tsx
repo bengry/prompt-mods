@@ -86,7 +86,7 @@ export const register: Register = (on) => {
     await $.command.register({
       name: 'aside',
       description: 'Side question that stays out of the main conversation; /aside list to reopen one',
-      argumentHint: '<question> | list | N <follow-up> | pull N | drop N',
+      argumentHint: '[<question> | list | N <follow-up> | pull N | drop N]',
       immediate: true,
     });
 
@@ -96,6 +96,12 @@ export const register: Register = (on) => {
   on('command.run', { command: 'aside' }, async ($, e) => {
     const action = parseArgs(e.args);
     const list = await read($, threads);
+
+    if (action.kind === 'toggle') {
+      const isOpen = (await $.ui.panes()).some((pane) => pane.id === PANE);
+      await (isOpen ? $.ui.close({ id: PANE }) : $.ui.open({ id: PANE, title: 'aside', focus: true }));
+      return {};
+    }
 
     if (action.kind === 'list') {
       await show($, null);

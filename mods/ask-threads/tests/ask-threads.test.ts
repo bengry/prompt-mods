@@ -6,7 +6,7 @@ import { forkPrompt } from '../hooks/prompts';
 
 describe('parseArgs', () => {
   test('reads list, ask, open, follow-up, pull and drop', () => {
-    expect(parseArgs('')).toEqual({ kind: 'list' });
+    expect(parseArgs('')).toEqual({ kind: 'toggle' });
     expect(parseArgs('list')).toEqual({ kind: 'list' });
     expect(parseArgs('why is the sky blue?')).toEqual({ kind: 'ask', question: 'why is the sky blue?' });
     expect(parseArgs('3')).toEqual({ kind: 'open', id: 3 });
@@ -58,6 +58,26 @@ test('/aside asks the fork, files the answer, and opens the pane', async ($, on)
   expect(ran.text).toBe(undefined);
   expect(opened).toEqual(['ask-threads']);
   expect(asked[0]).toContain('why is the sky blue?');
+});
+
+test('a bare /aside opens the pane when it is closed and closes it when it is open', async ($, on) => {
+  const calls: string[] = [];
+  let isOpen = false;
+  on('ui.panes', () => ({ value: isOpen ? [{ id: 'ask-threads', title: 'aside', isShown: true, isFocused: true, isPlaced: true }] : [] }));
+  on('ui.open', () => {
+    calls.push('open');
+    return { value: { isPlaced: true as const } };
+  });
+  on('ui.close', () => {
+    calls.push('close');
+    return { value: {} };
+  });
+
+  await $.command.run({ command: 'aside', args: '', origin: composer, presentation });
+  isOpen = true;
+  await $.command.run({ command: 'aside', args: '  ', origin: composer, presentation });
+
+  expect(calls).toEqual(['open', 'close']);
 });
 
 test('a pulled thread rides along with the next prompt', async ($, on) => {
