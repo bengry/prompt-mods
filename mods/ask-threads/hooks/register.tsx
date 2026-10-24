@@ -19,7 +19,7 @@ const preview = (text: string, width: number): string => {
 
 const show = async ($: EngineInterface, id: number | null): Promise<void> => {
   await update($, openId, () => id);
-  await $.ui.open({ id: PANE, title: 'aside', focus: true });
+  await $.ui.open({ id: PANE, title: 'aside', focus: true, closeOnEscape: true });
 };
 
 // Adds the question to the thread and asks the fork, on a timer of its own so
@@ -98,8 +98,15 @@ export const register: Register = (on) => {
     const list = await read($, threads);
 
     if (action.kind === 'toggle') {
-      const isOpen = (await $.ui.panes()).some((pane) => pane.id === PANE);
-      await (isOpen ? $.ui.close({ id: PANE }) : $.ui.open({ id: PANE, title: 'aside', focus: true }));
+      // A pane behind another tab or too narrow to draw is open but unseen, so this press should bring it up, not close it.
+      const pane = (await $.ui.panes()).find((one) => one.id === PANE);
+      const isVisible = pane?.isShown && pane.isPlaced;
+
+      if (isVisible) {
+        await $.ui.close({ id: PANE });
+      } else {
+        await $.ui.open({ id: PANE, title: 'aside', focus: true, closeOnEscape: true });
+      }
       return {};
     }
 
@@ -211,8 +218,11 @@ export const register: Register = (on) => {
             placeholder={`Follow up on #${thread.id}…`}
             autoFocus
             onSubmit={(value: string) => {
+              // The field holds the keyboard, so a typed /aside lands here instead of the command.
               const question = value.trim();
-              if (question !== '') {
+              if (question === '/aside') {
+                void $.ui.close({ id: PANE });
+              } else if (question !== '') {
                 void ask($, thread.id, question);
               }
             }}

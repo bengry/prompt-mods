@@ -80,6 +80,23 @@ test('a bare /aside opens the pane when it is closed and closes it when it is op
   expect(calls).toEqual(['open', 'close']);
 });
 
+test('a bare /aside brings up a pane that is open but not seen instead of closing it', async ($, on) => {
+  const calls: string[] = [];
+  on('ui.panes', () => ({ value: [{ id: 'ask-threads', title: 'aside', isShown: false, isFocused: false, isPlaced: true }] }));
+  on('ui.open', () => {
+    calls.push('open');
+    return { value: { isPlaced: true as const } };
+  });
+  on('ui.close', () => {
+    calls.push('close');
+    return { value: {} };
+  });
+
+  await $.command.run({ command: 'aside', args: '', origin: composer, presentation });
+
+  expect(calls).toEqual(['open']);
+});
+
 test('a pulled thread rides along with the next prompt', async ($, on) => {
   const clock = mock.clock(on);
   const contexts: (readonly string[] | undefined)[] = [];
